@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: Failover demo
+        run: |
+          python src/failover_sim.py --demo --output output/timeline.json
+          test -s output/timeline.json
+      - name: Terraform format
+        run: terraform fmt -check -recursive
+      - name: Terraform validate
+        run: |
+          terraform init -backend=false
+          terraform validate
